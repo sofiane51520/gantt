@@ -29,7 +29,9 @@ export function GanttChart({tasks, width, height, startDate, endDate}: GanttProp
             axisStrokeWidth,
             textFontSize,
             textColor,
-            tickNumber
+            tickNumber,
+            hoverStroke,
+            hoverFill
         } = GANTT_CONFIG;
 
         const sortedTasks = [...tasks].sort((a, b) => a.path.localeCompare(b.path));
@@ -58,7 +60,24 @@ export function GanttChart({tasks, width, height, startDate, endDate}: GanttProp
             .data(sortedTasks)
             .join("g")
             .attr("class", "task")
-            .attr("transform", (_task: GanttTask, index: number) => `translate(0, ${index * rowHeight})`);
+            .attr("transform", (_task: GanttTask, index: number) => `translate(5, ${index * rowHeight + 5})`)
+            .on("mouseover", function() {
+                d3.select(this).select("rect")
+                    .attr("fill", hoverFill)
+                    .attr("stroke", hoverStroke)
+                    .attr("stroke-width", 2);
+                d3.select(this).select("text")
+                    .attr("fill",hoverStroke )
+                    .attr("font-weight", "bold");
+            })
+            .on("mouseout", function() {
+                d3.select(this).select("rect")
+                    .attr("fill", rectangleColor)
+                    .attr("stroke", "none");
+                d3.select(this).select("text")
+                    .attr("fill", textColor)
+                    .attr("font-weight", "normal");
+            });
 
         svg.append("line")
             .attr("x1", labelWidth - 20)
@@ -67,7 +86,6 @@ export function GanttChart({tasks, width, height, startDate, endDate}: GanttProp
             .attr("y2", height)
             .attr("stroke", axisStroke)
             .attr("stroke-width", axisStrokeWidth);
-
 
         taskGroups.append("rect")
             .attr("x", (task: GanttTask) => x(task.startDate))
@@ -108,7 +126,9 @@ export function GanttChart({tasks, width, height, startDate, endDate}: GanttProp
             axisGroup.call(axis.scale(newX).ticks(tickNumber).tickFormat(getTickFormat(k)));
 
             svg.selectAll(".task rect")
+                // @ts-expect-error rends pas fou
                 .attr("x", (task: GanttTask) => newX(task.startDate))
+                // @ts-expect-error rends pas fou
                 .attr("width", (task: GanttTask) => {
                     const end = task.endDate ?? new Date(task.startDate.getTime() + 60 * 60 * 1000);
                     return newX(end) - newX(task.startDate);
