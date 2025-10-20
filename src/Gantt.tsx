@@ -1,20 +1,13 @@
 import {useEffect, useRef} from "react";
-import {GANTT_CONFIG, type GanttTask} from "./gantt.ts";
+import {GANTT_CONFIG, type GanttProps, type GanttTask} from "./gantt.ts";
 import * as d3 from "d3";
 import type {NumberValue} from "d3";
 
-interface GanttProps {
-    tasks: GanttTask[];
-    width: number;
-    height: number;
-    startDate: Date;
-    endDate: Date;
-}
 const getLevel = (task: GanttTask) => task.path.split("/").length - 1;
 
 export function GanttChart({tasks, width, height, startDate, endDate}: GanttProps) {
     const svgRef = useRef<SVGSVGElement | null>(null);
-
+    //TODO FIX RESET ZOOM ON TOGGLE
     useEffect(() => {
         if (!tasks || tasks.length === 0) return;
 

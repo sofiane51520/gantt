@@ -2,6 +2,13 @@ import type {CSSProperties} from "react";
 export interface Tasks {
     [key:string]: Tasks
 }
+export interface GanttProps {
+    tasks: GanttTask[];
+    width: number;
+    height: number;
+    startDate: Date;
+    endDate: Date;
+}
 
 export interface Task {
     id: string,
