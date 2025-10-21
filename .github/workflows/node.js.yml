@@ -32,6 +32,4 @@ jobs:
         run: pnpm run predeploy
 
       - name: Deploy to GitHub Pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm run deploy
