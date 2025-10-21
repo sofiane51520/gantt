@@ -3,17 +3,20 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://sofiane51520.github.io/gantt",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "dependencies": {
     "d3": "^7.9.0",
+    "gh-pages": "^6.3.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "yoga": "^0.0.20"
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
