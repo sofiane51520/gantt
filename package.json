@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://sofiane51520.github.io/gantt/",
+  "homepage": "https://sofiane51520.github.io/gantt",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
