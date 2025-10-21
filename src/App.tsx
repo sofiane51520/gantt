@@ -34,8 +34,9 @@ function App() {
                 tasks={visibleTasks.map(t => ({...t, onClick: () => handleTaskClick(t)}))}
                 width={900}
                 height={300}
-                startDate={new Date("2025-10-20T00:00:00Z")}
-                endDate={new Date("2025-10-27T00:00:00Z")}
+                startDate={new Date("2025-10-22T00:00:00Z")}
+                endDate={new Date("2025-10-25T00:00:00Z")}
+                referentialDate={new Date("2025-10-23T00:00:00Z")}
             />
         </div>
     );

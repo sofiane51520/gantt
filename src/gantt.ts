@@ -8,6 +8,7 @@ export interface GanttProps {
     height: number;
     startDate: Date;
     endDate: Date;
+    referentialDate:Date;
 }
 
 export interface Task {

@@ -5,7 +5,7 @@ import type {NumberValue} from "d3";
 
 const getLevel = (task: GanttTask) => task.path.split("/").length - 1;
 
-export function GanttChart({tasks, width, height, startDate, endDate}: GanttProps) {
+export function GanttChart({tasks, width, height, startDate, endDate, referentialDate}: GanttProps) {
     const svgRef = useRef<SVGSVGElement | null>(null);
     //TODO FIX RESET ZOOM ON TOGGLE
     useEffect(() => {
@@ -47,6 +47,21 @@ export function GanttChart({tasks, width, height, startDate, endDate}: GanttProp
             .attr("class", "axis")
             .call(axis);
 
+        const referentialDateStartX = x(referentialDate)
+        const referentialDateEndX = x(new Date(referentialDate.getTime() + 1000 * 60 * 60 * 8))
+
+
+        svg.append("g")
+            .append("rect")
+            .attr("id", "referentialZone")
+            .attr("fill", "red")
+            .attr("z-index", "0")
+            .attr("opacity", 0.1)
+            .attr("x", referentialDateStartX)
+            .attr("y", 0)
+            .attr("height", height)
+            .attr("width", referentialDateEndX - referentialDateStartX);
+
         const taskGroups = svg.append("g")
             .attr("class", "tasks")
             .selectAll(".task")
@@ -54,16 +69,16 @@ export function GanttChart({tasks, width, height, startDate, endDate}: GanttProp
             .join("g")
             .attr("class", "task")
             .attr("transform", (_task: GanttTask, index: number) => `translate(5, ${index * rowHeight + 5})`)
-            .on("mouseover", function() {
+            .on("mouseover", function () {
                 d3.select(this).select("rect")
                     .attr("fill", hoverFill)
                     .attr("stroke", hoverStroke)
                     .attr("stroke-width", 2);
                 d3.select(this).select("text")
-                    .attr("fill",hoverStroke )
+                    .attr("fill", hoverStroke)
                     .attr("font-weight", "bold");
             })
-            .on("mouseout", function() {
+            .on("mouseout", function () {
                 d3.select(this).select("rect")
                     .attr("fill", rectangleColor)
                     .attr("stroke", "none");
@@ -126,11 +141,19 @@ export function GanttChart({tasks, width, height, startDate, endDate}: GanttProp
                     const end = task.endDate ?? new Date(task.startDate.getTime() + 60 * 60 * 1000);
                     return newX(end) - newX(task.startDate);
                 });
+            const referentialDateStartX = newX(referentialDate)
+            const referentialDateEndX = newX(new Date(referentialDate.getTime() + 1000 * 60 * 60 * 8))
+
+            svg.select("#referentialZone")
+                .attr("x", referentialDateStartX)
+                .attr("y", 0)
+                .attr("width", referentialDateEndX - referentialDateStartX)
+                .attr("height", height);
         }
 
         svg.call(zoom);
 
-    }, [tasks, width, height, startDate, endDate]);
+    }, [tasks, width, height, startDate, endDate, referentialDate]);
 
     return <svg ref={svgRef} id="ganttChart"/>;
 }
