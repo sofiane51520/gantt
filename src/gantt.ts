@@ -36,8 +36,8 @@ export const GANTT_CONFIG = {
     textFontSize: "16px",
     textColor: "#69b3a2",
     tickNumber:10,
-    hoverFill: "red",
-    hoverStroke: "black",
+    hoverFill: "#06c0c5",
+    hoverStroke: "#06c0c5"
 };
 
 export interface Line {

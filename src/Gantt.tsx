@@ -25,6 +25,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             textColor,
             tickNumber,
             hoverStroke,
+            hoverFill
         } = GANTT_CONFIG;
 
         const sortedTasks = [...tasks].sort((a, b) => a.path.localeCompare(b.path));
@@ -93,23 +94,6 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             svg.select("#referentialLineShadow").attr("opacity", 0);
         });
 
-        const gradient = svg.append("linearGradient")
-            .attr("id", "movingGradient")
-            .attr("x1", "0%")
-            .attr("y1", "0%")
-            .attr("x2", "100%")
-            .attr("y2", "0%");
-
-        gradient.append("stop")
-            .attr("offset", "0%")
-            .attr("stop-color", "green-light");
-        gradient.append("stop")
-            .attr("offset", "50%")
-            .attr("stop-color", "cyan");
-        gradient.append("stop")
-            .attr("offset", "100%")
-            .attr("stop-color", "yellow");
-
         const taskGroups = svg.append("g")
             .attr("class", "tasks")
             .selectAll(".task")
@@ -119,9 +103,9 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             .attr("transform", (_task: GanttTask, index: number) => `translate(5, ${index * rowHeight + 5})`)
             .on("mouseover", function () {
                 d3.select(this).select("rect")
-                    .attr("fill", "url(#movingGradient)")
+                    .attr("fill", hoverFill)
                     .attr("stroke", hoverStroke)
-                    .attr("stroke-width", 2);
+                    .attr("stroke-width", 1);
                 d3.select(this).select("text")
                     .attr("fill", hoverStroke)
                     .attr("font-weight", "bold");
