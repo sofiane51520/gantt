@@ -50,7 +50,6 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
         const referentialDateStartX = x(referentialDate)
         const referentialDateEndX = x(new Date(referentialDate.getTime() + 1000 * 60 * 60 * 8))
 
-
         svg.append("g")
             .append("rect")
             .attr("id", "referentialZone")
@@ -61,6 +60,39 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             .attr("y", 0)
             .attr("height", height)
             .attr("width", referentialDateEndX - referentialDateStartX);
+
+        svg.append("g")
+            .append("line")
+            .attr("id", "referentialLine")
+            .attr("stroke", "red")
+            .attr("x1", referentialDateStartX)
+            .attr("x2", referentialDateStartX)
+            .attr("y1", 0)
+            .attr("y2", height);
+
+        svg.append("g")
+            .append("line")
+            .attr("id", "referentialLineShadow")
+            .attr("stroke", "red")
+            .attr("y1", 0)
+            .attr("y2", height);
+
+        svg.on("mousemove", function (event) {
+            const [mouseX] = d3.pointer(event);
+            const xScale = d3.scaleUtc()
+                .domain([startDate, endDate])
+                .range([GANTT_CONFIG.labelWidth + GANTT_CONFIG.separation, width - 20]);
+
+            const date = xScale.invert(mouseX);
+            const alignedX = xScale(date);
+            svg.select("#referentialLineShadow")
+                .attr("x1", alignedX)
+                .attr("x2", alignedX)
+                .attr("opacity", 0.5);
+        }).on("mouseleave", function () {
+            svg.select("#referentialLineShadow").attr("opacity", 0);
+        });
+
 
         const taskGroups = svg.append("g")
             .attr("class", "tasks")
@@ -120,7 +152,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             const extent: [[number, number], [number, number]] = [[labelWidth + separation, 0], [width, height]];
 
             svg.call(d3.zoom()
-                .scaleExtent([0.25, 12])
+                .scaleExtent([0.5, 12])
                 .translateExtent(extent)
                 .extent(extent)
                 .on("zoom", zoomed));
@@ -130,7 +162,6 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
         const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, GanttTask>) => {
             const newX = event.transform.rescaleX(x);
             const k = event.transform.k;
-
             axisGroup.call(axis.scale(newX).ticks(tickNumber).tickFormat(getTickFormat(k)));
 
             svg.selectAll(".task rect")
@@ -149,6 +180,18 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
                 .attr("y", 0)
                 .attr("width", referentialDateEndX - referentialDateStartX)
                 .attr("height", height);
+
+
+            svg.select("#referentialLine")
+                .attr("x1", referentialDateStartX)
+                .attr("x2", referentialDateStartX)
+
+            const [mouseX] = d3.pointer(event);
+            // Fix value on drag and drop
+            svg.select("#referentialLineShadow")
+                .attr("x1", mouseX)
+                .attr("x2", mouseX)
+
         }
 
         svg.call(zoom);

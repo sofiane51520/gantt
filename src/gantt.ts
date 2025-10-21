@@ -35,7 +35,7 @@ export const GANTT_CONFIG = {
     axisStrokeWidth: 3,
     textFontSize: "16px",
     textColor: "#69b3a2",
-    tickNumber:7,
+    tickNumber:10,
     hoverFill: "red",
     hoverStroke: "black",
 };
