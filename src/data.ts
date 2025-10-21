@@ -4,11 +4,11 @@ export const data :Task[]= [
     {
         id: "1",
         objectType: "project",
-        name: "Projet A",
+        name: "Technique",
         startDate: new Date("2025-10-20T00:00:00Z"),
         endDate: new Date("2025-10-26T00:00:00Z"),
         hidden: false,
-        path: "ProjetA"
+        path: "Technique"
     },
     {
         id: "2",
@@ -17,7 +17,7 @@ export const data :Task[]= [
         startDate: new Date("2025-10-20T00:00:00Z"),
         endDate: new Date("2025-10-21T00:00:00Z"),
         hidden: false,
-        path: "ProjetA/Analyse"
+        path: "Technique/Analyse"
     },
     {
         id: "3",
@@ -26,7 +26,7 @@ export const data :Task[]= [
         startDate: new Date("2025-10-21T00:00:00Z"),
         endDate: undefined,
         hidden: false,
-        path: "ProjetA/Design"
+        path: "Technique/Design"
     },
     {
         id: "4",
@@ -35,7 +35,7 @@ export const data :Task[]= [
         startDate: new Date("2025-10-22T00:00:00Z"),
         endDate: undefined,
         hidden: false,
-        path: "ProjetA/Design/UI"
+        path: "Technique/Design/UI"
     },
     {
         id: "5",
@@ -44,16 +44,16 @@ export const data :Task[]= [
         startDate: new Date("2025-10-23T00:00:00Z"),
         endDate: new Date("2025-10-25T00:00:00Z"),
         hidden: false,
-        path: "ProjetA/Backend"
+        path: "Technique/Backend"
     },
     {
         id: "6",
         objectType: "project",
-        name: "Projet B",
+        name: "Management",
         startDate: new Date("2025-10-24T00:00:00Z"),
         endDate: new Date("2025-10-27T00:00:00Z"),
         hidden: false,
-        path: "ProjetB"
+        path: "Management"
     },
     {
         id: "7",
@@ -62,7 +62,7 @@ export const data :Task[]= [
         startDate: new Date("2025-10-24T00:00:00Z"),
         endDate: new Date("2025-10-24T12:00:00Z"),
         hidden: false,
-        path: "ProjetB/Préparation"
+        path: "Management/Préparation"
     },
     {
         id: "8",
@@ -71,6 +71,6 @@ export const data :Task[]= [
         startDate: new Date("2025-10-25T00:00:00Z"),
         endDate: new Date("2025-10-26T00:00:00Z"),
         hidden: false,
-        path: "ProjetB/Execution"
+        path: "Management/Execution"
     },
 ]
