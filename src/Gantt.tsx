@@ -9,6 +9,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
     const svgRef = useRef<SVGSVGElement | null>(null);
     //TODO FIX RESET ZOOM ON TOGGLE
     useEffect(() => {
+        console.log("useEffect")
         if (!tasks || tasks.length === 0) return;
 
         const {
@@ -172,6 +173,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
                     const end = task.endDate ?? new Date(task.startDate.getTime() + 60 * 60 * 1000);
                     return newX(end) - newX(task.startDate);
                 });
+
             const referentialDateStartX = newX(referentialDate)
             const referentialDateEndX = newX(new Date(referentialDate.getTime() + 1000 * 60 * 60 * 8))
 
