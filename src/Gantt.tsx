@@ -40,7 +40,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             .attr("viewBox", [0, -marginTop, width, height])
             .attr("width", width)
             .attr("height", height)
-            .attr("style", "max-width: 100%; height: auto; user-select:none;");
+            .attr("style", "max-width: 100%; height: auto;");
 
         svg.selectAll("*").remove();
 
@@ -52,8 +52,8 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
         const referentialDateEndX = x(new Date(referentialDate.getTime() + 1000 * 60 * 60 * 8))
 
         svg.append("g")
-            .append("rect")
             .attr("id", "referentialZone")
+            .append("rect")
             .attr("fill", "red")
             .attr("z-index", "0")
             .attr("opacity", 0.1)
@@ -62,21 +62,6 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             .attr("height", height)
             .attr("width", referentialDateEndX - referentialDateStartX);
 
-        svg.append("g")
-            .append("line")
-            .attr("id", "referentialLine")
-            .attr("stroke", "red")
-            .attr("x1", referentialDateStartX)
-            .attr("x2", referentialDateStartX)
-            .attr("y1", 0)
-            .attr("y2", height);
-
-        svg.append("g")
-            .append("line")
-            .attr("id", "referentialLineShadow")
-            .attr("stroke", "red")
-            .attr("y1", 0)
-            .attr("y2", height);
 
         svg.on("mousemove", function (event) {
             const [mouseX] = d3.pointer(event);
@@ -86,12 +71,14 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
 
             const date = xScale.invert(mouseX);
             const alignedX = xScale(date);
-            svg.select("#referentialLineShadow")
+            svg.selectAll("#referentialLineShadow line, #referentialLineShadow text")
                 .attr("x1", alignedX)
                 .attr("x2", alignedX)
+                .attr("x", alignedX)
+                .text(date.toDateString())
                 .attr("opacity", 0.5);
         }).on("mouseleave", function () {
-            svg.select("#referentialLineShadow").attr("opacity", 0);
+            svg.selectAll("#referentialLineShadow line, #referentialLineShadow text").attr("opacity", 0);
         });
 
         const taskGroups = svg.append("g")
@@ -137,6 +124,36 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             })
             .attr("fill", rectangleColor);
 
+        svg.append("g")
+            .attr("id", "referentialLine")
+            .append("line")
+            .attr("stroke", "red")
+            .attr("x1", referentialDateStartX)
+            .attr("x2", referentialDateStartX)
+            .attr("y1", 0)
+            .attr("y2", height)
+            .attr("z-index",10);
+        svg.select("#referentialLine")
+            .append("text")
+            .data([referentialDate.getTime()])
+            .attr("y", 0)
+            .attr("x", referentialDateStartX)
+            .text(x.invert(referentialDateStartX).toDateString())
+
+        svg.append("g")
+            .attr("id", "referentialLineShadow")
+            .append("line")
+            .attr("stroke", "red")
+            .attr("y1", 0)
+            .attr("y2", height)
+            .attr("opacity", 0)
+            .attr("z-index",10);
+        svg.select("#referentialLineShadow")
+            .append("text")
+            .attr("y", 0)
+            .attr("x", referentialDateStartX)
+            .text(x.invert(referentialDateStartX).toDateString())
+
         taskGroups.append("text")
             .attr("x", (task: GanttTask) => getLevel(task) * indentWidth + 5)
             .attr("y", rowHeight / 2)
@@ -147,17 +164,22 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             .on("click", (_event, task: GanttTask) => task.onClick())
             .text((task: GanttTask) => task.name);
 
-        // @ts-expect-error no problemo j'pige R
-        const zoom = (svg: Selection<SVGSVGElement, GanttTask>): void => {
-            const extent: [[number, number], [number, number]] = [[labelWidth + separation, 0], [width, height]];
 
-            svg.call(d3.zoom()
-                .scaleExtent([0.5, 12])
-                .translateExtent(extent)
-                .extent(extent)
-                .on("zoom", zoomed));
-
-        }
+        svg.on("click", (event) => {
+            console.log(event);
+            const [newX] = d3.pointer(event);
+            console.log(newX)
+            const transform = d3.zoomTransform(svg.select("#referentialLine text").node())
+            svg.select("#referentialLine line")
+                .attr("x1", newX)
+                .attr("x2", newX);
+            svg.select("#referentialLine text")
+                .attr("x", newX);
+            console.log(x.invert(newX))
+            console.log(transform.invertX(newX))
+            svg.select("#referentialLine text").data([new Date(transform.invert(newX)).getTime()]).text(new Date(transform.invert(newX)).toDateString());
+        });
+        svg.on("dblclick",null);
 
         const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, GanttTask>) => {
             const newX = event.transform.rescaleX(x);
@@ -173,29 +195,27 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
                     return newX(end) - newX(task.startDate);
                 });
 
-            const referentialDateStartX = newX(referentialDate)
-            const referentialDateEndX = newX(new Date(referentialDate.getTime() + 1000 * 60 * 60 * 8))
+            svg.select("#referentialZone rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
+            //USE DATA
+            svg.select("#referentialLine line").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
+            svg.select("#referentialLine text").attr("x" ,data=> newX(data))
 
-            svg.select("#referentialZone")
-                .attr("x", referentialDateStartX)
-                .attr("y", 0)
-                .attr("width", referentialDateEndX - referentialDateStartX)
-                .attr("height", height);
-
-
-            svg.select("#referentialLine")
-                .attr("x1", referentialDateStartX)
-                .attr("x2", referentialDateStartX)
-
-            const [mouseX] = d3.pointer(event);
-            // Fix value on drag and drop
-            svg.select("#referentialLineShadow")
-                .attr("x1", mouseX)
-                .attr("x2", mouseX)
-
+            svg.select("#referentialLineShadow line")
+                .attr("opacity", 0)
         }
 
-        svg.call(zoom);
+        const zoomEnd = () => {
+            svg.select("#referentialLineShadow line")
+                .attr("opacity", 0.5)
+        }
+        const extent: [[number, number], [number, number]] = [[labelWidth + separation, 0], [width, height]];
+
+        // @ts-expect-error no problemo j'pige R
+        svg.call(d3.zoom()
+            .scaleExtent([0.5, 12])
+            .translateExtent(extent)
+            .extent(extent)
+            .on("zoom", zoomed).on("end", zoomEnd));
 
     }, [tasks, width, height, startDate, endDate, referentialDate]);
 
