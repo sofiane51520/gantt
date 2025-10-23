@@ -65,7 +65,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
 
         svg.on("mousemove", function (event) {
             const [mouseX] = d3.pointer(event);
-            const transform = d3.zoomTransform(svg.node());
+            const transform = d3.zoomTransform(svg.node() as SVGSVGElement);
             const newX = transform.invertX(mouseX);
             const newXX = transform.applyX(newX)
             const date = x.invert(newX);
@@ -169,7 +169,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
 
 
         svg.on("click", (event) => {
-            const transform = d3.zoomTransform(svg.node());
+            const transform = d3.zoomTransform(svg.node() as SVGSVGElement);
             const [pointX] = d3.pointer(event);
             const newX = transform.invertX(pointX);
             const newXX = transform.applyX(newX)
@@ -192,7 +192,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             svg.selectAll(".task rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
             svg.select("#referentialZone rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
 
-            const currentDate :number= svg.select("#referentialLine text").datum()
+            const currentDate= svg.select("#referentialLine text").datum() as number
             svg.select("#referentialLine line").attr("x1" ,newX(currentDate)).attr("x2",newX(currentDate))
             svg.select("#referentialLine text").attr("x" ,newX(currentDate))
 
