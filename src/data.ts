@@ -5,7 +5,7 @@ export const data :Task[]= [
         id: "1",
         objectType: "project",
         name: "Technique",
-        startDate: new Date("2025-10-20T00:00:00Z"),
+        startDate: new Date("2025-10-23T00:00:00Z"),
         endDate: new Date("2025-10-26T00:00:00Z"),
         hidden: false,
         path: "Technique"
@@ -14,8 +14,8 @@ export const data :Task[]= [
         id: "2",
         objectType: "task",
         name: "Analyse",
-        startDate: new Date("2025-10-20T00:00:00Z"),
-        endDate: new Date("2025-10-21T00:00:00Z"),
+        startDate: new Date("2025-10-23T00:00:00Z"),
+        endDate: new Date("2025-10-24T00:00:00Z"),
         hidden: false,
         path: "Technique/Analyse"
     },
@@ -23,7 +23,7 @@ export const data :Task[]= [
         id: "3",
         objectType: "task",
         name: "Design",
-        startDate: new Date("2025-10-21T00:00:00Z"),
+        startDate: new Date("2025-10-25T00:00:00Z"),
         endDate: undefined,
         hidden: false,
         path: "Technique/Design"
@@ -32,7 +32,7 @@ export const data :Task[]= [
         id: "4",
         objectType: "task",
         name: "UI",
-        startDate: new Date("2025-10-22T00:00:00Z"),
+        startDate: new Date("2025-10-26T00:00:00Z"),
         endDate: undefined,
         hidden: false,
         path: "Technique/Design/UI"
