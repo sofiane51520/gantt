@@ -65,17 +65,16 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
 
         svg.on("mousemove", function (event) {
             const [mouseX] = d3.pointer(event);
-            const xScale = d3.scaleUtc()
-                .domain([startDate, endDate])
-                .range([GANTT_CONFIG.labelWidth + GANTT_CONFIG.separation, width - 20]);
+            const transform = d3.zoomTransform(svg.node());
+            const newX = transform.invertX(mouseX);
+            const newXX = transform.applyX(newX)
+            const date = x.invert(newX);
 
-            const date = xScale.invert(mouseX);
-            const alignedX = xScale(date);
             svg.selectAll("#referentialLineShadow line, #referentialLineShadow text")
-                .attr("x1", alignedX)
-                .attr("x2", alignedX)
-                .attr("x", alignedX)
-                .text(date.toDateString())
+                .attr("x1", newXX)
+                .attr("x2", newXX)
+                .attr("x", newXX)
+                .text(d3.utcFormat("%m-%d-%H-%M")(date))
                 .attr("opacity", 0.5);
         }).on("mouseleave", function () {
             svg.selectAll("#referentialLineShadow line, #referentialLineShadow text").attr("opacity", 0);
@@ -115,7 +114,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             .attr("stroke-width", axisStrokeWidth);
 
         taskGroups.append("rect")
-            .attr("x", (task: GanttTask) => x(task.startDate))
+            .attr("x", (task: GanttTask) => Math.max(labelWidth + separation, x(task.startDate)))
             .attr("y", 0)
             .attr("height", rowHeight - 4)
             .attr("width", (task: GanttTask) => {
@@ -135,10 +134,12 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             .attr("z-index",10);
         svg.select("#referentialLine")
             .append("text")
-            .data([referentialDate.getTime()])
+            .datum(referentialDate.getTime())
             .attr("y", 0)
             .attr("x", referentialDateStartX)
-            .text(x.invert(referentialDateStartX).toDateString())
+            .attr("fill", "white")
+            .attr("font", "bold 6px")
+            .text(d3.utcFormat("%m-%d-%H-%M")(x.invert(referentialDateStartX)))
 
         svg.append("g")
             .attr("id", "referentialLineShadow")
@@ -152,7 +153,9 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             .append("text")
             .attr("y", 0)
             .attr("x", referentialDateStartX)
-            .text(x.invert(referentialDateStartX).toDateString())
+            .attr("fill", "white")
+            .attr("font", "bold 6px")
+            .text(d3.utcFormat("%m-%d-%H-%M")(x.invert(referentialDateStartX)))
 
         taskGroups.append("text")
             .attr("x", (task: GanttTask) => getLevel(task) * indentWidth + 5)
@@ -166,18 +169,19 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
 
 
         svg.on("click", (event) => {
-            console.log(event);
-            const [newX] = d3.pointer(event);
-            console.log(newX)
-            const transform = d3.zoomTransform(svg.select("#referentialLine text").node())
+            const transform = d3.zoomTransform(svg.node());
+            const [pointX] = d3.pointer(event);
+            const newX = transform.invertX(pointX);
+            const newXX = transform.applyX(newX)
+            const date = x.invert(newX);
+
             svg.select("#referentialLine line")
-                .attr("x1", newX)
-                .attr("x2", newX);
+                .attr("x1", newXX)
+                .attr("x2", newXX);
             svg.select("#referentialLine text")
-                .attr("x", newX);
-            console.log(x.invert(newX))
-            console.log(transform.invertX(newX))
-            svg.select("#referentialLine text").data([new Date(transform.invert(newX)).getTime()]).text(new Date(transform.invert(newX)).toDateString());
+                .attr("x", newXX)
+                .datum([new Date(date).getTime()])
+                .text(d3.utcFormat("%m-%d-%H-%M")(date));
         });
         svg.on("dblclick",null);
 
@@ -186,35 +190,27 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             const k = event.transform.k;
             axisGroup.call(axis.scale(newX).ticks(tickNumber).tickFormat(getTickFormat(k)));
 
-            svg.selectAll(".task rect")
-                // @ts-expect-error rends pas fou
-                .attr("x", (task: GanttTask) => newX(task.startDate))
-                // @ts-expect-error rends pas fou
-                .attr("width", (task: GanttTask) => {
-                    const end = task.endDate ?? new Date(task.startDate.getTime() + 60 * 60 * 1000);
-                    return newX(end) - newX(task.startDate);
-                });
-
+            svg.selectAll(".task rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
             svg.select("#referentialZone rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
-            //USE DATA
-            svg.select("#referentialLine line").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
-            svg.select("#referentialLine text").attr("x" ,data=> newX(data))
+
+            const currentDate :number= svg.select("#referentialLine text").datum()
+            svg.select("#referentialLine line").attr("x1" ,newX(currentDate)).attr("x2",newX(currentDate))
+            svg.select("#referentialLine text").attr("x" ,newX(currentDate))
 
             svg.select("#referentialLineShadow line")
                 .attr("opacity", 0)
         }
 
         const zoomEnd = () => {
-            svg.select("#referentialLineShadow line")
-                .attr("opacity", 0.5)
+            svg.select("#referentialLineShadow line").attr("opacity", 0.5)
         }
         const extent: [[number, number], [number, number]] = [[labelWidth + separation, 0], [width, height]];
 
         // @ts-expect-error no problemo j'pige R
         svg.call(d3.zoom()
-            .scaleExtent([0.5, 12])
+            .scaleExtent([0.5, 16])
             .translateExtent(extent)
-            .extent(extent)
+            // .extent(extent)
             .on("zoom", zoomed).on("end", zoomEnd));
 
     }, [tasks, width, height, startDate, endDate, referentialDate]);
