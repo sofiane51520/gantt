@@ -6,7 +6,7 @@ import type {NumberValue} from "d3";
 const getLevel = (task: GanttTask) => task.path.split("/").length - 1;
 
 export function GanttChart({tasks, width, height, startDate, endDate, referentialDate}: GanttProps) {
-    const svgRef = useRef<SVGSVGElement>();
+    const svgRef = useRef<SVGSVGElement>(null);
     //TODO FIX RESET ZOOM ON TOGGLE
     useEffect(() => {
         console.log("useEffect")
