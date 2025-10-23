@@ -189,7 +189,6 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             const newX = event.transform.rescaleX(x);
             const k = event.transform.k;
             axisGroup.call(axis.scale(newX).ticks(tickNumber).tickFormat(getTickFormat(k)));
-
             svg.selectAll(".task rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
             svg.select("#referentialZone rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
 
@@ -197,8 +196,7 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             svg.select("#referentialLine line").attr("x1" ,newX(currentDate)).attr("x2",newX(currentDate))
             svg.select("#referentialLine text").attr("x" ,newX(currentDate))
 
-            svg.select("#referentialLineShadow line")
-                .attr("opacity", 0)
+            svg.select("#referentialLineShadow line").attr("opacity", 0)
         }
 
         const zoomEnd = () => {
