@@ -32,7 +32,7 @@ function App() {
             <h2>Diagramme de Gantt</h2>
             <GanttChart
                 tasks={visibleTasks.map(t => ({...t, onClick: () => handleTaskClick(t)}))}
-                width={900}
+                width={1400}
                 height={300}
                 startDate={new Date("2025-10-22T00:00:00Z")}
                 endDate={new Date("2025-10-25T00:00:00Z")}
