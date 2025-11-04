@@ -9,7 +9,7 @@ export default defineConfig({
       typescript: {
         enabled: process.env.NODE_ENV === 'development', // Only enable in development
         buildMode: true, // Ensure it runs during build in development
-      }},
-],
+      }})
+  ],
   base: '/gantt/', // 👈 important for GitHub Pages
 })
