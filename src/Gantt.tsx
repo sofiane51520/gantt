@@ -131,15 +131,11 @@ const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
         });
 
     taskGroups.append("rect")
-        .attr("x", (task: GanttTask) => {
-            // console.log("x",Math.max(labelWidth + separation,x(task.startDate)))
-            return Math.max(labelWidth + separation, x(task.startDate))
-        })
-        .attr("y",(_task: GanttTask, index: number) => index * rowHeight + 5)
+        .attr("x", (task: GanttTask) => Math.max(labelWidth + separation, x(task.startDate)))
+        .attr("y", (_task: GanttTask, index: number) => index * rowHeight + 5)
         .attr("height", rowHeight - 4)
         .attr("width", (task: GanttTask) => {
             const end = task.endDate ?? new Date(task.startDate.getTime() + 60 * 60 * 1000);
-            // console.log("width", x(end) - x(task.startDate))
             return x(end) - x(task.startDate);
         })
         .attr("fill", rectangleColor)
@@ -150,8 +146,8 @@ const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
             const newPositionP = transform.apply(newPosition)
 
             const y = event.currentTarget.y.baseVal.value
-
-            svg.append("text").attr("class", "tooltip").attr("fill", "white").text(data.name).attr("x", newPositionP[0] + 20).attr("y", y - 20)
+            const tooltipOffset = {x: 20, y: -20}
+            svg.append("text").attr("class", "tooltip").attr("fill", "white").text(data.name).attr("x", newPositionP[0] + tooltipOffset.x).attr("y", y + tooltipOffset.y)
         })
         .on("mouseout", function () {
             svg.selectAll(".tooltip").remove()
@@ -159,7 +155,7 @@ const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
 
     taskGroups.append("text")
         .attr("x", (task: GanttTask) => getLevel(task) * indentWidth + 5)
-        .attr("y",(_task: GanttTask, index: number) => index * rowHeight + 5)
+        .attr("y", (_task: GanttTask, index: number) => index * rowHeight + 5)
         .attr("dominant-baseline", "middle")
         .attr("fill", textColor)
         .attr("font-size", textFontSize)
@@ -177,9 +173,7 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
 
     const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, GanttTask>) => {
         const newX = event.transform.rescaleX(x);
-        // const newY = event.transform.rescaleX(y);
         XaxisGroup.call(Xaxis.scale(newX)).raise();
-        // YaxisGroup.call(Yaxis.scale(newY)).raise();
         axis2Group.call(axis2.scale(newX)).raise();
 
         xRef.current = newX;
@@ -198,30 +192,32 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
         svg.select("#referentialLineShadow line").attr("opacity", 0.5)
     }
 
-    const dragged = (event: d3.D3DragEvent<SVGSVGElement, GanttTask, {x:number, y:number}>) => {
-        // const oldRange = [...y.range()]
-        // YaxisGroup.call(Yaxis.scale(y.range([oldRange[0] + event.dx, oldRange[1] + event.dy])))
-        // const newY = event.y + event.subject.y;
-        // const newX = event.x + event.subject.x;
-        svg.selectAll<SVGSVGElement, Task>(".task").nodes().forEach((e)=> {
-            // console.log(e.children[0].x.baseVal.value)
-            e.children[0].setAttribute("y",e.children[0].y.baseVal.value + event.dy)
-            e.children[1].setAttribute("y",e.children[0].y.baseVal.value + event.dy)
-            e.children[0].setAttribute("x",e.children[0].x.baseVal.value + event.dx)
-            // e.children[1].setAttribute("x",e.children[0].x.baseVal.value + event.dx)
-            // console.log(e.setAttribute("y",e.children[0].y.baseVal[0].value + event.dy))
-            // console.log(e.y.baseVal[0].value)
-            // svg.select(e).attr("y",e.y.baseVal[0].value + event.dy)
-            // e.y = e.y.baseVal[0].value + event.dy
+    const dragged = (event: d3.D3DragEvent<SVGSVGElement, GanttTask, { x: number, y: number }>) => {
+        const oldDomain = xRef.current.domain();
+        const domainDiff = xRef.current.invert(event.dx);
+        const range = oldDomain[1].getTime() - oldDomain[0].getTime();
+        // const diff = (event.dx*100 * range) / width
+        const per = event.dx /*/15 */* width / 100
+        const perDomain = (per*(range / width) )
+        console.log(perDomain)
+        // console.log({oldDomain, dx:event.dx, domainDiff})
+        // console.log(oldDomain[1].getTime() - oldDomain[0].getTime())
+        // const newX = xRef.current.copy().range([xRef.current.range()[0] + event.dx,xRef.current.range()[1] + event.dx])
+        const newX = xRef.current.copy().domain([new Date(Math.max(x.domain()[0].getTime(), oldDomain[0].getTime() - perDomain)), new Date(Math.min(x.domain()[1].getTime(), oldDomain[1].getTime() - perDomain))])
+        xRef.current = newX;
+
+        XaxisGroup.call(Xaxis.scale(newX)).raise();
+        svg.selectAll<SVGSVGElement, Task>(".task").nodes().forEach((e) => {
+            e.children[0].setAttribute("y", e.children[0].y.baseVal.value + event.dy)
+            e.children[1].setAttribute("y", e.children[0].y.baseVal.value + event.dy)
+            e.children[0].setAttribute("x", e.children[0].x.baseVal.value + per)
         })
-        // svg.selectAll(".task text").attr("transform", `translate(0, ${newY})`)
-        // svg.selectAll(".task rect").attr("transform", `translate(${newX}, ${newY})`)
     }
 
     const extent: [[number, number], [number, number]] = [[labelWidth + separation, marginTop], [width, 1200]];
     svg.call(
         // @ts-expect-error dsddsqdsq
-        d3.drag(".Yaxis").subject((event) => ({x:event.x, y:event.y})).on("drag", dragged)
+        d3.drag(".Yaxis").subject((event) => ({x: event.x, y: event.y})).on("drag", dragged)
     );
     svg.call(
         // @ts-expect-error dsqd dsq
@@ -311,7 +307,6 @@ const initReferentialObjects = (svg: d3.Selection<SVGSVGElement, unknown, null, 
         const [pointX] = d3.pointer(event);
         if (pointX < 150) {
             svg.selectAll("#referentialLineShadow line, #referentialLineShadow text").attr("opacity", 0);
-
         } else {
             const newX = transform.invertX(pointX);
             const newXX = transform.applyX(newX)
