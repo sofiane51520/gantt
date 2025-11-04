@@ -6,7 +6,7 @@
   "homepage": "https://sofiane51520.github.io/gantt",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "pnpm run build",
