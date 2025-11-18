@@ -129,7 +129,7 @@ const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
                 .attr("fill", textColor)
                 .attr("font-weight", "normal");
         });
-
+    const formatFull = d3.timeFormat("%d %b, %H:%M");
     taskGroups.append("rect")
         .attr("x", (task: GanttTask) => Math.max(labelWidth + separation, x(task.startDate)))
         .attr("y", (_task: GanttTask, index: number) => index * rowHeight + 5)
@@ -139,19 +139,7 @@ const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
             return x(end) - x(task.startDate);
         })
         .attr("fill", rectangleColor)
-        .on("mouseover", function (event, data) {
-            const [mouseX, mouseY] = d3.pointer(event);
-            const transform = d3.zoomTransform(svg.node() as SVGSVGElement);
-            const newPosition = transform.invert([mouseX, mouseY]);
-            const newPositionP = transform.apply(newPosition)
-
-            const y = event.currentTarget.y.baseVal.value
-            const tooltipOffset = {x: 20, y: -20}
-            svg.append("text").attr("class", "tooltip").attr("fill", "white").text(data.name).attr("x", newPositionP[0] + tooltipOffset.x).attr("y", y + tooltipOffset.y)
-        })
-        .on("mouseout", function () {
-            svg.selectAll(".tooltip").remove()
-        });
+        .append('title').text((task: GanttTask)=> `${task.name} \n${formatFull(task.startDate)} ${task?.endDate !== undefined ? "| "  + formatFull(task.endDate) : "" }`);
 
     taskGroups.append("text")
         .attr("x", (task: GanttTask) => getLevel(task) * indentWidth + 5)

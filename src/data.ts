@@ -2,7 +2,7 @@ import type {Task} from "./gantt.ts";
 
 export const data: Task[] = [
     // === Projet 1 : Technique ===
-    { id: "1", objectType: "project", name: "Technique", startDate: new Date("2025-10-23T00:00:00Z"), endDate: new Date("2025-10-25T23:59:59Z"), hidden: false, path: "Technique" },
+    { id: "1", objectType: "project", name: "Technique", startDate: new Date("2025-10-23T00:00:00Z"), hidden: false, path: "Technique" },
     { id: "2", objectType: "task", name: "Analyse", startDate: new Date("2025-10-23T00:00:00Z"), endDate: new Date("2025-10-23T18:00:00Z"), hidden: false, path: "Technique/Analyse" },
     { id: "3", objectType: "task", name: "Design", startDate: new Date("2025-10-23T12:00:00Z"), endDate: new Date("2025-10-24T12:00:00Z"), hidden: false, path: "Technique/Design" },
     { id: "4", objectType: "task", name: "UI", startDate: new Date("2025-10-24T00:00:00Z"), endDate: new Date("2025-10-25T00:00:00Z"), hidden: false, path: "Technique/Design/UI" },
