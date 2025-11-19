@@ -1,7 +1,7 @@
 import {useEffect, useRef} from "react";
 import {GANTT_CONFIG, type GanttProps, type GanttTask, type Task} from "./gantt.ts";
-import {type NumberValue, scaleLog} from "d3";
 import * as d3 from "d3";
+import {type NumberValue} from "d3";
 
 const getLevel = (task: GanttTask) => task.path.split("/").length - 1;
 
@@ -19,18 +19,15 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
         const svg: d3.Selection<SVGSVGElement, unknown, null, undefined> = initSvg(svgRef.current, width, height, 45)
         const {
             Xaxis,
-            Yaxis,
             axis2,
             x,
-            y,
             XaxisGroup,
-            YaxisGroup,
             axis2Group
-        } = initAxes(svg, tasks, height, [startDate, endDate], [labelWidth + separation, width - 20])
+        } = initAxes(xRef,svg, tasks, height, [startDate, endDate], [labelWidth + separation, width - 20])
         xRef.current = x;
         displayData(svg, tasks, x)
         initReferentialObjects(svg, referentialDate, x, height)
-        initZoom(xRef, svg, Xaxis, Yaxis, XaxisGroup, YaxisGroup, axis2, axis2Group, x, y, width, height);
+        initZoom(xRef, svg, Xaxis, XaxisGroup, axis2, axis2Group, x, width, referentialDate);
     }, []);
 
     useEffect(() => {
@@ -54,7 +51,7 @@ const initSvg = (svgRef: SVGSVGElement, width: number, height: number, marginTop
     return svg;
 }
 
-const initAxes = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, tasks: Task[], height: number, domain: [Date, Date], range: [number, number]) => {
+const initAxes = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>,svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, tasks: Task[], height: number, domain: [Date, Date], range: [number, number]) => {
     const {
         tickNumber,
     } = GANTT_CONFIG;
@@ -66,28 +63,19 @@ const initAxes = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, ta
         .domain(domain)
         .range(range);
 
-    const y = d3.scaleLinear().domain([0, tasks.length * 20]).range([0, tasks.length * 20]);
-
     const Xaxis: d3.Axis<Date | NumberValue> = d3.axisTop(x).ticks(tickNumber, d3.utcFormat("%H:%M"));
-    const Yaxis = d3.axisRight(y).ticks(20)/*.tickSize(0).tickSizeInner(0).tickSizeOuter(0)*/
     const axis2: d3.Axis<Date | NumberValue> = d3.axisTop(x2).ticks(d3.utcDay.every(1), d3.utcFormat("%d %b"))
     const XaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined> = svg.append("g")
         .attr("class", "Xaxis")
         .call(Xaxis).raise()
 
-    const YaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined> = svg.append("g")
-        .attr("class", "Yaxis")
-        .call(Yaxis).raise()
-
     const axis2Group = svg.append("g")
         .attr("class", "axis2")
         .attr("transform", `translate(0,${-25})`)
         .call(axis2).raise()
+    xRef.current = x
 
-    // axis2Group.selectAll("text")
-    //     .attr("transform",`translate(${(axis2.scale().range()[1] - axis2.scale().range()[0] / axis2Group.selectAll("text").size()) / 2.2},0)`)
-
-    return {Xaxis, Yaxis, axis2, x, y, XaxisGroup, YaxisGroup, axis2Group};
+    return {Xaxis, axis2, x, XaxisGroup, axis2Group};
 };
 
 const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, data: GanttTask[], x: d3.ScaleTime<number, number, never>) => {
@@ -139,7 +127,7 @@ const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
             return x(end) - x(task.startDate);
         })
         .attr("fill", rectangleColor)
-        .append('title').text((task: GanttTask)=> `${task.name} \n${formatFull(task.startDate)} ${task?.endDate !== undefined ? "| "  + formatFull(task.endDate) : "" }`);
+        .append('title').text((task: GanttTask) => `${task.name} \n${formatFull(task.startDate)} ${task?.endDate !== undefined ? "| " + formatFull(task.endDate) : ""}`);
 
     taskGroups.append("text")
         .attr("x", (task: GanttTask) => getLevel(task) * indentWidth + 5)
@@ -152,7 +140,7 @@ const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
         .text((task: GanttTask) => task.name);
 }
 
-const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, Xaxis: d3.Axis<Date | NumberValue>, Yaxis: d3.Axis<NumberValue>, XaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>, YaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>, axis2: d3.Axis<Date | NumberValue>, axis2Group: d3.Selection<SVGGElement, unknown, null, undefined>, x: d3.ScaleTime<number, number, never>, y: d3.ScaleLinear<number, number, never>, width: number, height: number) => {
+const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, Xaxis: d3.Axis<Date | NumberValue>, XaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>, axis2: d3.Axis<Date | NumberValue>, axis2Group: d3.Selection<SVGGElement, unknown, null, undefined>, x: d3.ScaleTime<number, number, never>, width: number, referentialDate:Date) => {
     const {
         labelWidth,
         separation,
@@ -165,15 +153,12 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
         axis2Group.call(axis2.scale(newX)).raise();
 
         xRef.current = newX;
-
-        svg.selectAll(".task rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
-        svg.select("#referentialZone rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
-
         const currentDate = svg.select("#referentialLine text").datum() as number
-        svg.select("#referentialLine line").attr("x1", newX(currentDate)).attr("x2", newX(currentDate))
-        svg.select("#referentialLine text").attr("x", newX(currentDate))
 
-        svg.select("#referentialLineShadow line").attr("opacity", 0)
+        svg.selectAll(".task rect").attr("transform", `translate(${event.transform.x}, 1) scale(${event.transform.k}, 1)`)
+        svg.select("#referentialZone rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
+        svg.select("#referentialLine line").attr("x1", newX(currentDate)).attr("x2", newX(currentDate))
+
     }
 
     const zoomEnd = () => {
@@ -181,32 +166,48 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
     }
 
     const dragged = (event: d3.D3DragEvent<SVGSVGElement, GanttTask, { x: number, y: number }>) => {
-        const oldDomain = xRef.current.domain();
-        const domainDiff = xRef.current.invert(event.dx);
-        const range = oldDomain[1].getTime() - oldDomain[0].getTime();
-        // const diff = (event.dx*100 * range) / width
-        const per = event.dx /*/15 */* width / 100
-        const perDomain = (per*(range / width) )
-        console.log(perDomain)
-        // console.log({oldDomain, dx:event.dx, domainDiff})
-        // console.log(oldDomain[1].getTime() - oldDomain[0].getTime())
-        // const newX = xRef.current.copy().range([xRef.current.range()[0] + event.dx,xRef.current.range()[1] + event.dx])
-        const newX = xRef.current.copy().domain([new Date(Math.max(x.domain()[0].getTime(), oldDomain[0].getTime() - perDomain)), new Date(Math.min(x.domain()[1].getTime(), oldDomain[1].getTime() - perDomain))])
+        const {
+            tickNumber,
+        } = GANTT_CONFIG;
+
+        const initDomainRange = x.domain()[1].getTime() - x.domain()[0].getTime();
+        const domainRange = xRef.current.domain()[1].getTime() - xRef.current.domain()[0].getTime();
+        const zoomRatio = initDomainRange / domainRange
+
+        const pixelRange = xRef.current.range()[1] - xRef.current.range()[0];
+        const pixelTimeRatio = (domainRange / pixelRange) * zoomRatio
+        const timeShift = pixelTimeRatio * -event.dx
+
+        const newX = xRef.current.copy().domain([new Date(xRef.current.domain()[0].getTime() + timeShift), new Date(xRef.current.domain()[1].getTime() + timeShift)])
+        XaxisGroup.call(d3.axisTop(newX).ticks(tickNumber, d3.utcFormat("%H:%M")));
+        axis2Group.call(axis2.scale(newX));
         xRef.current = newX;
 
-        XaxisGroup.call(Xaxis.scale(newX)).raise();
         svg.selectAll<SVGSVGElement, Task>(".task").nodes().forEach((e) => {
             e.children[0].setAttribute("y", e.children[0].y.baseVal.value + event.dy)
             e.children[1].setAttribute("y", e.children[0].y.baseVal.value + event.dy)
-            e.children[0].setAttribute("x", e.children[0].x.baseVal.value + per)
+            e.children[0].setAttribute("x", e.children[0].x.baseVal.value + event.dx)
         })
+
+        const currentDate = svg.select("#referentialLine text").datum() as number
+
+        svg.select("#referentialLine line").attr("x1", newX(currentDate)).attr("x2", newX(currentDate))
+        svg.select("#referentialLine text").attr("x", newX(currentDate))
+        //FIX ZONE
+        svg.select("#referentialZone rect").attr("x", newX(referentialDate.getTime()))
+
+        svg.select("#referentialLineShadow line").attr("opacity", 0)
+        svg.select("#referentialLineShadow text").attr("opacity", 0)
+
     }
 
     const extent: [[number, number], [number, number]] = [[labelWidth + separation, marginTop], [width, 1200]];
     svg.call(
-        // @ts-expect-error dsddsqdsq
-        d3.drag(".Yaxis").subject((event) => ({x: event.x, y: event.y})).on("drag", dragged)
+        // @ts-expect-error dsqd dsq
+        d3.drag()
+            .subject((event) => ({...event})).on("drag", dragged)
     );
+
     svg.call(
         // @ts-expect-error dsqd dsq
         d3.zoom()
