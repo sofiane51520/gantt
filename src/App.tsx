@@ -36,7 +36,7 @@ function App() {
                 height={300}
                 startDate={new Date("2025-10-22T00:00:00Z")}
                 endDate={new Date("2025-10-25T00:00:00Z")}
-                referentialDate={new Date("2025-10-23T00:00:00Z")}
+                referentialDate={new Date("2025-10-23T10:00:00Z")}
             />
         </div>
     );

@@ -1,7 +1,7 @@
 import {useEffect, useRef} from "react";
 import {GANTT_CONFIG, type GanttProps, type GanttTask, type Task} from "./gantt.ts";
 import * as d3 from "d3";
-import {type NumberValue} from "d3";
+import {type NumberValue, zoomIdentity} from "d3";
 
 const getLevel = (task: GanttTask) => task.path.split("/").length - 1;
 
@@ -23,17 +23,16 @@ export function GanttChart({tasks, width, height, startDate, endDate, referentia
             x,
             XaxisGroup,
             axis2Group
-        } = initAxes(xRef,svg, tasks, height, [startDate, endDate], [labelWidth + separation, width - 20])
+        } = initAxes(xRef,svg, tasks, height, [referentialDate, new Date(referentialDate.getTime() + new Date(0).setHours(8))], [labelWidth + separation, width - 20])
         xRef.current = x;
         displayData(svg, tasks, x)
-        initReferentialObjects(svg, referentialDate, x, height)
-        initZoom(xRef, svg, Xaxis, XaxisGroup, axis2, axis2Group, x, width, referentialDate);
+        initReferentialObjects(svg, referentialDate, xRef, height)
+        initZoom(xRef, svg, Xaxis, XaxisGroup, axis2, axis2Group, x, width, referentialDate, tasks);
     }, []);
 
     useEffect(() => {
         if (svgRef.current) {
             const svg = d3.select(svgRef.current)
-            svg.selectAll(".tasks").remove();
             displayData(svg, tasks, xRef.current)
         }
     }, [tasks]);
@@ -58,12 +57,12 @@ const initAxes = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>,svg
 
     const x: d3.ScaleTime<number, number, never> = d3.scaleUtc()
         .domain(domain)
-        .range(range);
+        .range(range).clamp(false);
     const x2: d3.ScaleTime<number, number, never> = d3.scaleUtc()
         .domain(domain)
         .range(range);
 
-    const Xaxis: d3.Axis<Date | NumberValue> = d3.axisTop(x).ticks(tickNumber, d3.utcFormat("%H:%M"));
+    const Xaxis: d3.Axis<Date | NumberValue> = d3.axisTop(x).ticks(tickNumber, d3.utcFormat("%H:%M")).tickSizeInner(-height);
     const axis2: d3.Axis<Date | NumberValue> = d3.axisTop(x2).ticks(d3.utcDay.every(1), d3.utcFormat("%d %b"))
     const XaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined> = svg.append("g")
         .attr("class", "Xaxis")
@@ -74,6 +73,7 @@ const initAxes = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>,svg
         .attr("transform", `translate(0,${-25})`)
         .call(axis2).raise()
     xRef.current = x
+    d3.selectAll("g .tick line").style("opacity", 0.1);
 
     return {Xaxis, axis2, x, XaxisGroup, axis2Group};
 };
@@ -92,7 +92,7 @@ const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
         hoverFill
     } = GANTT_CONFIG;
 
-
+    svg.selectAll(".tasks").remove();
     const taskGroups = svg.append("g")
         .attr("class", "tasks")
         .selectAll(".task")
@@ -140,7 +140,7 @@ const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
         .text((task: GanttTask) => task.name);
 }
 
-const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, Xaxis: d3.Axis<Date | NumberValue>, XaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>, axis2: d3.Axis<Date | NumberValue>, axis2Group: d3.Selection<SVGGElement, unknown, null, undefined>, x: d3.ScaleTime<number, number, never>, width: number, referentialDate:Date) => {
+const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, Xaxis: d3.Axis<Date | NumberValue>, XaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>, axis2: d3.Axis<Date | NumberValue>, axis2Group: d3.Selection<SVGGElement, unknown, null, undefined>, x: d3.ScaleTime<number, number, never>, width: number, referentialDate:Date, tasks:Task[]) => {
     const {
         labelWidth,
         separation,
@@ -156,8 +156,9 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
         const currentDate = svg.select("#referentialLine text").datum() as number
 
         svg.selectAll(".task rect").attr("transform", `translate(${event.transform.x}, 1) scale(${event.transform.k}, 1)`)
-        svg.select("#referentialZone rect").attr("transform", `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`)
+        svg.select("#referentialZone rect").attr("x", newX(referentialDate.getTime()))
         svg.select("#referentialLine line").attr("x1", newX(currentDate)).attr("x2", newX(currentDate))
+        d3.selectAll("g .tick line").style("opacity", 0.1);
 
     }
 
@@ -170,34 +171,27 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
             tickNumber,
         } = GANTT_CONFIG;
 
-        const initDomainRange = x.domain()[1].getTime() - x.domain()[0].getTime();
         const domainRange = xRef.current.domain()[1].getTime() - xRef.current.domain()[0].getTime();
-        const zoomRatio = initDomainRange / domainRange
-
+        const zoomRatio = 1
         const pixelRange = xRef.current.range()[1] - xRef.current.range()[0];
         const pixelTimeRatio = (domainRange / pixelRange) * zoomRatio
         const timeShift = pixelTimeRatio * -event.dx
 
-        const newX = xRef.current.copy().domain([new Date(xRef.current.domain()[0].getTime() + timeShift), new Date(xRef.current.domain()[1].getTime() + timeShift)])
-        XaxisGroup.call(d3.axisTop(newX).ticks(tickNumber, d3.utcFormat("%H:%M")));
+        const newX = xRef.current.copy().domain([new Date(xRef.current.domain()[0].getTime() + timeShift), new Date(xRef.current.domain()[1].getTime() + timeShift)]).clamp(false);
+        XaxisGroup.call(d3.axisTop(newX).ticks(tickNumber, d3.utcFormat("%H:%M")).tickSizeInner(-1000));
         axis2Group.call(axis2.scale(newX));
         xRef.current = newX;
 
-        svg.selectAll<SVGSVGElement, Task>(".task").nodes().forEach((e) => {
-            e.children[0].setAttribute("y", e.children[0].y.baseVal.value + event.dy)
-            e.children[1].setAttribute("y", e.children[0].y.baseVal.value + event.dy)
-            e.children[0].setAttribute("x", e.children[0].x.baseVal.value + event.dx)
-        })
-
+        displayData(svg, tasks, xRef.current);
         const currentDate = svg.select("#referentialLine text").datum() as number
-
+        console.log(referentialDate, newX(referentialDate.getTime()))
         svg.select("#referentialLine line").attr("x1", newX(currentDate)).attr("x2", newX(currentDate))
         svg.select("#referentialLine text").attr("x", newX(currentDate))
-        //FIX ZONE
         svg.select("#referentialZone rect").attr("x", newX(referentialDate.getTime()))
 
         svg.select("#referentialLineShadow line").attr("opacity", 0)
         svg.select("#referentialLineShadow text").attr("opacity", 0)
+        d3.selectAll("g .tick line").style("opacity", 0.1);
 
     }
 
@@ -211,7 +205,7 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
     svg.call(
         // @ts-expect-error dsqd dsq
         d3.zoom()
-            .scaleExtent([0.5, 12])
+            .scaleExtent([0.5, 4.8])
             .translateExtent(extent)
             .on("zoom", zoomed)
             .on("end", zoomEnd)
@@ -219,16 +213,16 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
 
 }
 
-const initReferentialObjects = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, referentialDate: Date, x: d3.ScaleTime<number, number, never>, height: number) => {
-    const referentialDateStartX = x(referentialDate)
-    const referentialDateEndX = x(new Date(referentialDate.getTime() + 1000 * 60 * 60 * 8))
+const initReferentialObjects = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, referentialDate: Date, xRef: React.RefObject<d3.ScaleTime<number, number, never>>, height: number) => {
+    const referentialDateStartX = xRef.current(referentialDate)
+    const referentialDateEndX = xRef.current(new Date(referentialDate.getTime() + 1000 * 60 * 60 * 8))
 
     svg.append("g")
         .attr("id", "referentialZone")
         .append("rect")
         .attr("fill", "red")
         .attr("z-index", "0")
-        .attr("opacity", 0.1)
+        .attr("opacity", 0.05)
         .attr("x", referentialDateStartX)
         .attr("y", 0)
         .attr("height", height)
@@ -243,8 +237,7 @@ const initReferentialObjects = (svg: d3.Selection<SVGSVGElement, unknown, null, 
             const transform = d3.zoomTransform(svg.node() as SVGSVGElement);
             const newX = transform.invertX(mouseX);
             const newXX = transform.applyX(newX)
-            const date = x.invert(newX);
-
+            const date = xRef.current.invert(newX);
             svg.selectAll("#referentialLineShadow line, #referentialLineShadow text")
                 .attr("x1", newXX)
                 .attr("x2", newXX)
@@ -273,7 +266,7 @@ const initReferentialObjects = (svg: d3.Selection<SVGSVGElement, unknown, null, 
         .attr("x", referentialDateStartX)
         .attr("fill", "white")
         .attr("font", "bold 6px")
-        .text(d3.utcFormat("%m-%d-%H-%M")(x.invert(referentialDateStartX)))
+        .text(d3.utcFormat("%m-%d-%H-%M")(xRef.current.invert(referentialDateStartX)))
 
     svg.append("g")
         .attr("id", "referentialLineShadow")
@@ -289,7 +282,7 @@ const initReferentialObjects = (svg: d3.Selection<SVGSVGElement, unknown, null, 
         .attr("x", referentialDateStartX)
         .attr("fill", "white")
         .attr("font", "bold 6px")
-        .text(d3.utcFormat("%m-%d-%H-%M")(x.invert(referentialDateStartX)))
+        .text(d3.utcFormat("%m-%d-%H-%M")(xRef.current.invert(referentialDateStartX)))
 
     svg.on("click", (event) => {
         const transform = d3.zoomTransform(svg.node() as SVGSVGElement);
