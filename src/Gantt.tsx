@@ -28,13 +28,13 @@ export function GanttChart({onTaskClick, tasks, width, height, startDate, endDat
         xRef.current = x;
         // displayData(svg, tasks, xRef.current, onTaskClick)
         initReferentialObjects(svg, referentialDate, x, height)
-        initZoom(xRef, svg, Xaxis, XaxisGroup, axis2, axis2Group, x, width, referentialDate, tasks, onTaskClick);
+        initZoom(xRef, svg, Xaxis, XaxisGroup, axis2, axis2Group, x, width, referentialDate, tasks, height);
     }, []);
 
     useEffect(() => {
         if (svgRef.current) {
             const svg = d3.select(svgRef.current)
-            console.log(tasks)
+            // console.log(tasks)
             // displayData(svg, tasks, xRef.current, onTaskClick)
         }
     }, [tasks]);
@@ -99,7 +99,7 @@ const initAxes = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
         });
 
     const Xaxis: d3.Axis<Date | NumberValue> = d3.axisTop(x).ticks(tickNumber, d3.utcFormat("%H:%M")).tickSizeInner(-height);
-    const axis2: d3.Axis<Date | NumberValue> = d3.axisTop(x2).ticks(d3.utcDay.every(1), d3.utcFormat("%d %b"))
+    const axis2: d3.Axis<Date | NumberValue> = d3.axisTop(x2).ticks(d3.utcDay.every(1), d3.utcFormat("%d %b"));
     const XaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined> = svg.append("g")
         .attr("class", "Xaxis")
         .call(Xaxis).raise()
@@ -114,71 +114,7 @@ const initAxes = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
     return {Xaxis, axis2, x, y, XaxisGroup, axis2Group};
 };
 
-const displayData = (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, data: GanttTask[], x: d3.ScaleTime<number, number, never>, onTaskClick: (task: GanttTask) => void) => {
-
-    const {
-        rowHeight,
-        indentWidth,
-        labelWidth,
-        separation,
-        rectangleColor,
-        textFontSize,
-        textColor,
-        hoverStroke,
-        hoverFill
-    } = GANTT_CONFIG;
-
-    svg.selectAll(".tasks").remove();
-    const taskGroups = svg.append("g")
-        .attr("class", "tasks")
-        .selectAll(".task")
-        .data(data)
-        .join("g")
-        .attr("class", "task")
-        // .attr("transform", (_task: GanttTask, index: number) => `translate(5, ${index * rowHeight + 5})`)
-        .on("mouseover", function () {
-            d3.select(this).select("rect")
-                .attr("fill", hoverFill)
-                .attr("stroke", hoverStroke)
-                .attr("stroke-width", 1);
-            d3.select(this).select("text")
-                .attr("fill", hoverStroke)
-                .attr("font-weight", "bold");
-        })
-        .on("mouseout", function () {
-            d3.select(this).select("rect")
-                .attr("fill", rectangleColor)
-                .attr("stroke", "none");
-            d3.select(this).select("text")
-                .attr("fill", textColor)
-                .attr("font-weight", "normal");
-        });
-    const formatFull = d3.timeFormat("%d %b, %H:%M");
-    taskGroups.append("rect")
-        .attr("x", (task: GanttTask) => x(task.startDate))
-        .attr("y", (_task: GanttTask, index: number) => index * rowHeight + 5)
-        .attr("hidden", (task) => task.hidden)
-        .attr("height", rowHeight - 4)
-        .attr("width", (task: GanttTask) => {
-            const end = task.endDate ?? new Date(task.startDate.getTime() + 60 * 60 * 1000);
-            return x(end) - x(task.startDate);
-        })
-        .attr("fill", rectangleColor)
-        .append('title').text((task: GanttTask) => `${task.name} \n${formatFull(task.startDate)} ${task?.endDate !== undefined ? "| " + formatFull(task.endDate) : ""}`);
-
-    taskGroups.append("text")
-        .attr("x", (task: GanttTask) => getLevel(task) * indentWidth + 5)
-        .attr("y", (_task: GanttTask, index: number) => index * rowHeight + 5)
-        .attr("visibility", (task) => task.hidden ? "hidden" : "visible")
-        .attr("dominant-baseline", "middle")
-        .attr("fill", textColor)
-        .attr("font-size", textFontSize)
-        .style("cursor", "pointer")
-        .on("click", (_event, task: GanttTask) => onTaskClick(task))
-        .text((task: GanttTask) => task.name);
-}
-
-const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, Xaxis: d3.Axis<Date | NumberValue>, XaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>, axis2: d3.Axis<Date | NumberValue>, axis2Group: d3.Selection<SVGGElement, unknown, null, undefined>, x: d3.ScaleTime<number, number, never>, width: number, referentialDate: Date, tasks: Task[], onTaskClick) => {
+const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, svg: d3.Selection<SVGSVGElement, unknown, null, undefined>, Xaxis: d3.Axis<Date | NumberValue>, XaxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>, axis2: d3.Axis<Date | NumberValue>, axis2Group: d3.Selection<SVGGElement, unknown, null, undefined>, x: d3.ScaleTime<number, number, never>, width: number, referentialDate: Date, tasks: Task[],height:number) => {
     const {
         labelWidth,
         separation,
@@ -186,60 +122,32 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
     } = GANTT_CONFIG;
 
     const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, GanttTask>) => {
-        const contentGroup = svg.selectAll("rect.task");
-        contentGroup.attr("transform", `translate(${event.transform.x}, 1) scale(${event.transform.k}, 1)`)
-
-        // console.log({oldT: event.transform, newTransform});
-        const newX = event.transform.scale(1 / event.transform.k).rescaleX(x);
+        const newX = event.transform.rescaleX(x);
         XaxisGroup.call(Xaxis.scale(newX)).raise();
         axis2Group.call(axis2.scale(newX)).raise();
         xRef.current = newX;
 
+        const contentGroup = svg.selectAll("rect.task");
+        // const y=  Math.max(0,Math.max(event.transform.y, -height+5))
+        contentGroup.attr("transform", `translate(${event.transform.x}, ${event.transform.y}) scale(${event.transform.k}, 1)`)
+        console.log("zooom",event.transform.y)
         const currentDate = svg.select("#referentialLine text").datum() as number
-
         svg.select("#referentialZone rect").attr("x", newX(referentialDate.getTime()))
         svg.select("#referentialLine line").attr("x1", newX(currentDate)).attr("x2", newX(currentDate))
+        svg.select("#referentialLine text").attr("x", newX(currentDate))
+
+        svg.select("#referentialLineShadow line").attr("visibility", "hidden")
+        svg.select("#referentialLineShadow text").attr("visibility", "hidden")
+
         d3.selectAll("g .tick line").style("opacity", 0.1);
     }
 
     const zoomEnd = () => {
-        svg.select("#referentialLineShadow line").attr("opacity", 0.5)
+        console.log("zoomEnd")
+        svg.select("#referentialLineShadow line").attr("visibility", "visible")
+        svg.select("#referentialLineShadow text").attr("visibility", "visible")
     }
 
-    const dragged = (event: d3.D3DragEvent<SVGSVGElement, GanttTask, { x: number, y: number }>) => {
-        const {
-            tickNumber,
-        } = GANTT_CONFIG;
-
-        const domainRange = x.domain()[1].getTime() - x.domain()[0].getTime();
-        const zoomRatio = 1
-        const pixelRange = x.range()[1] - x.range()[0];
-        const pixelTimeRatio = (domainRange / pixelRange) * zoomRatio
-        const timeShift = pixelTimeRatio * -event.dx
-
-
-        x.domain([new Date(xRef.current.domain()[0].getTime() + timeShift), new Date(xRef.current.domain()[1].getTime() + timeShift)])
-        XaxisGroup.call(d3.axisTop(x).ticks(tickNumber, d3.utcFormat("%H:%M")).tickSizeInner(-1000));
-        axis2Group.call(axis2.scale(x));
-        xRef.current = x;
-
-
-        const contentGroup = svg.selectAll("rect.task");
-        contentGroup.attr("transform", `translate(0, ${yOffset})`);
-
-
-        // displayData(svg, tasks, xRef.current, onTaskClick);
-        const currentDate = svg.select("#referentialLine text").datum() as number
-
-        svg.select("#referentialLine line").attr("x1", x(currentDate)).attr("x2", x(currentDate))
-        svg.select("#referentialLine text").attr("x", x(currentDate))
-        svg.select("#referentialZone rect").attr("x", x(referentialDate.getTime()))
-
-        svg.select("#referentialLineShadow line").attr("opacity", 0)
-        svg.select("#referentialLineShadow text").attr("opacity", 0)
-        d3.selectAll("g .tick line").style("opacity", 0.1);
-
-    }
     let yOffset = 0;
     let xOffset = 0;
     let startY = 0;
@@ -247,7 +155,7 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
     let initialYOffset = 0;
     let initialXOffset = 0;
 
-    let zoomStartTransform: any = null;
+    let zoomStartTransform: d3.ZoomTransform;
 
     const extent: [[number, number], [number, number]] = [[labelWidth + separation, marginTop], [width, 1200]];
 
@@ -261,62 +169,43 @@ const initZoom = (xRef: React.RefObject<d3.ScaleTime<number, number, never>>, sv
                 initialYOffset = yOffset;
                 initialXOffset = xOffset;
                 zoomStartTransform = d3.zoomTransform(svg.node() as any);
-
+                console.log("dragStart")
+                // console.log(zoomStartTransform.x)
             })
             .on("drag", (event) => {
-                const contentGroup = svg.selectAll("rect.task");
-
-                const dy = event.y - startY;
-                const dx = event.x - startX;
-
+                // const dy = event.y - startY;
+                // const dx = event.x - startX;
+                //
+                // yOffset = initialYOffset + dy;
+                // xOffset = initialXOffset + dx;
+                // const visibleTasks = tasks.filter(t => !t.hidden);
+                // yOffset = Math.min(0, yOffset);
+                // const maxScroll = -(visibleTasks.length * 24 - 300);
+                // yOffset = Math.max(yOffset, maxScroll);
                 // const newT = zoomStartTransform.translate(dx, 0);
+                // svg.call(zoomBehavior.transform, newT);
 
+                const dx = event.x - startX;
+                const dy = event.y - startY;
 
-                yOffset = initialYOffset + dy;
-                xOffset = initialXOffset + dx;
-                const visibleTasks = tasks.filter(t => !t.hidden);
-                yOffset = Math.min(0, yOffset);
-                const maxScroll = -(visibleTasks.length * 24 - 300);
-                yOffset = Math.max(yOffset, maxScroll);
-                console.log(xOffset,yOffset )
+                const newTransform = d3.zoomIdentity
+                    .translate(
+                        zoomStartTransform.x + dx,
+                        Math.min(0,Math.max(zoomStartTransform.y + dy, -height))
+                    )
+                    .scale(zoomStartTransform.k);
 
-                const newT = zoomStartTransform.translate(dx ,0);
-                svg.call(zoomBehavior.transform, newT);
+                svg.call(zoomBehavior.transform, newTransform);
 
-
-                // const t = d3.zoomTransform(svg.node() as any);
-
-                // contentGroup.attr("transform", `translate(${t.x}, ${yOffset})`);
-
-                // const {
-                //     tickNumber,
-                // } = GANTT_CONFIG;
-
-                // const domainRange = x.domain()[1].getTime() - x.domain()[0].getTime();
-                // const zoomRatio = 1
-                // const pixelRange = x.range()[1] - x.range()[0];
-                // const pixelTimeRatio = (domainRange / pixelRange) * zoomRatio
-                // const timeShift = pixelTimeRatio * -event.dx
-
-                // x.domain([new Date(xRef.current.domain()[0].getTime() + timeShift), new Date(xRef.current.domain()[1].getTime() + timeShift)])
-                // XaxisGroup.call(d3.axisTop(x).ticks(tickNumber, d3.utcFormat("%H:%M")).tickSizeInner(-1000));
-                // axis2Group.call(axis2.scale(x));
-                // xRef.current = x;
-                // d3.selectAll("g .tick line").style("opacity", 0.1);
-                // const currentDate = svg.select("#referentialLine text").datum() as number
-                //
-                //
-                // svg.select("#referentialLine line").attr("x1", x(currentDate)).attr("x2", x(currentDate))
-                // svg.select("#referentialLine text").attr("x", x(currentDate))
-                // svg.select("#referentialZone rect").attr("x", x(referentialDate.getTime()))
-                //
-                // svg.select("#referentialLineShadow line").attr("opacity", 0)
-                // svg.select("#referentialLineShadow text").attr("opacity", 0)
-
-            })
+            }).on("end", () => {
+            console.log("dragEnd")
+            svg.select("#referentialLineShadow line").attr("visibility", "visible")
+            svg.select("#referentialLineShadow text").attr("visibility", "visible")
+        })
     );
-    const zoomBehavior =d3.zoom()
-        .scaleExtent([0.3,8])
+
+    const zoomBehavior = d3.zoom()
+        .scaleExtent([0.3, 8])
         .translateExtent(extent)
         .on("zoom", zoomed)
         .on("end", zoomEnd)
@@ -355,7 +244,7 @@ const initReferentialObjects = (svg: d3.Selection<SVGSVGElement, unknown, null, 
                 .attr("x2", newXX)
                 .attr("x", newXX)
                 .text(d3.utcFormat("%m-%d-%H-%M")(date))
-                .attr("opacity", 0.5);
+                .attr("opacity", 0.8);
         }
 
     }).on("mouseleave", function () {
@@ -379,6 +268,7 @@ const initReferentialObjects = (svg: d3.Selection<SVGSVGElement, unknown, null, 
         .attr("fill", "white")
         .attr("font", "bold 6px")
         .text(d3.utcFormat("%m-%d-%H-%M")(x.invert(referentialDateStartX)))
+        .attr("transform", `translate(-35,-35)`)
 
     svg.append("g")
         .attr("id", "referentialLineShadow")
@@ -395,6 +285,7 @@ const initReferentialObjects = (svg: d3.Selection<SVGSVGElement, unknown, null, 
         .attr("fill", "white")
         .attr("font", "bold 6px")
         .text(d3.utcFormat("%m-%d-%H-%M")(x.invert(referentialDateStartX)))
+        .attr("transform", `translate(-35,-35)`)
 
     svg.on("click", (event) => {
         const transform = d3.zoomTransform(svg.node() as SVGSVGElement);
