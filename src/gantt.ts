@@ -9,6 +9,7 @@ export interface GanttProps {
     startDate: Date;
     endDate: Date;
     referentialDate:Date;
+    onTaskClick:(task: Task) => void;
 }
 
 export interface Task {

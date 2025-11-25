@@ -1,6 +1,6 @@
-import type {Task} from "./gantt.ts";
+import type {GanttTask, Task} from "./gantt.ts";
 
-export const data: Task[] = [
+export const data: GanttTask[] = [
     // === Projet 1 : Technique ===
     { id: "1", objectType: "project", name: "Technique", startDate: new Date("2025-10-23T00:00:00Z"), hidden: false, path: "Technique" },
     { id: "2", objectType: "task", name: "Analyse", startDate: new Date("2025-10-23T00:00:00Z"), endDate: new Date("2025-10-23T18:00:00Z"), hidden: false, path: "Technique/Analyse" },
