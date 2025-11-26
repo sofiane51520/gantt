@@ -2,12 +2,13 @@ import type {GanttTask, Task} from "./gantt.ts";
 
 export const data: GanttTask[] = [
     // === Projet 1 : Technique ===
-    { id: "1", objectType: "project", name: "Technique", startDate: new Date("2025-10-23T00:00:00Z"), hidden: false, path: "Technique" },
+    { id: "1", objectType: "project", name: "Technique", startDate: new Date("2025-10-23T10:00:00Z"), hidden: false, path: "Technique" },
     { id: "2", objectType: "task", name: "Analyse", startDate: new Date("2025-10-23T00:00:00Z"), endDate: new Date("2025-10-23T18:00:00Z"), hidden: false, path: "Technique/Analyse" },
     { id: "3", objectType: "task", name: "Design", startDate: new Date("2025-10-23T12:00:00Z"), endDate: new Date("2025-10-24T12:00:00Z"), hidden: false, path: "Technique/Design" },
     { id: "4", objectType: "task", name: "UI", startDate: new Date("2025-10-24T00:00:00Z"), endDate: new Date("2025-10-25T00:00:00Z"), hidden: false, path: "Technique/Design/UI" },
     { id: "5", objectType: "task", name: "Backend", startDate: new Date("2025-10-23T06:00:00Z"), endDate: new Date("2025-10-25T12:00:00Z"), hidden: false, path: "Technique/Backend" },
     { id: "6", objectType: "task", name: "Tests", startDate: new Date("2025-10-25T00:00:00Z"), endDate: new Date("2025-10-25T23:00:00Z"), hidden: false, path: "Technique/Tests" },
+    { id: "7", objectType: "task", name: "Tests", startDate: new Date("2025-10-25T00:00:00Z"), endDate: new Date("2025-10-25T23:00:00Z"), hidden: false, path: "Technique/Tests" },
 
     // === Projet 2 : Management ===
     { id: "7", objectType: "project", name: "Management", startDate: new Date("2025-10-23T00:00:00Z"), endDate: new Date("2025-10-25T23:59:59Z"), hidden: false, path: "Management" },
@@ -71,5 +72,5 @@ export const data: GanttTask[] = [
     { id: "47", objectType: "task", name: "Rédaction", startDate: new Date("2025-10-24T00:00:00Z"), endDate: new Date("2025-10-24T22:00:00Z"), hidden: false, path: "Documentation/Rédaction" },
     { id: "48", objectType: "task", name: "Relecture", startDate: new Date("2025-10-25T00:00:00Z"), endDate: new Date("2025-10-25T23:00:00Z"), hidden: false, path: "Documentation/Relecture" },
     { id: "49", objectType: "task", name: "Publication", startDate: new Date("2025-10-25T12:00:00Z"), endDate: new Date("2025-10-25T23:00:00Z"), hidden: false, path: "Documentation/Publication" },
-    { id: "50", objectType: "task", name: "Archivage", startDate: new Date("2025-10-25T18:00:00Z"), endDate: new Date("2025-10-25T23:59:59Z"), hidden: false, path: "Documentation/Archivage" }
+    { id: "50", objectType: "task", name: "Archivage", startDate: new Date("2025-10-25T18:00:00Z"), endDate: new Date("2025-10-26T08:59:59Z"), hidden: false, path: "Documentation/Archivage" }
 ];
